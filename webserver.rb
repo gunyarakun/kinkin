@@ -26,6 +26,10 @@ class WebServer < Sinatra::Base
 
   configure do
     mime_type :text_plain, 'text/plain'
+    set(:builder) do
+      bc = CIConfig[:builder]
+      Builder.new(bc[:server], bc[:user], bc[:project], bc[:branch], bc[:project])
+    end
   end
 
   post '/github_webhook' do
@@ -37,12 +41,10 @@ class WebServer < Sinatra::Base
       Thread.kill($thread) unless $thread.nil?
 
       $thread = Thread.new do
-        bc = CIConfig[:builder]
-        b = Builder.new(bc[:server], bc[:user], bc[:project], bc[:branch], bc[:project])
         # fetch
-        b.delete_and_fetch
+        settings.builder.delete_and_fetch
         # and build!!!!!
-        b.build('~/.rbenv/versions/2.3.1/bin/gem install bundler && ~/.rbenv/versions/2.3.1/bin/rake')
+        settings.builder.build('~/.rbenv/versions/2.3.1/bin/gem install bundler && ~/.rbenv/versions/2.3.1/bin/rake')
       end
 
       settings.logger.info("Webhook: #{JSON.generate(payload)}")

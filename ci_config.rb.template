@@ -1,0 +1,30 @@
+CIConfig = {
+  builder: {
+    server: 'github.com',
+    user: 'gunyarakun',
+    project: 'timezone_finder',
+    branch: 'master'
+  },
+  slack: {
+    token: 'xoxp-some-token-for-slack',
+    name: 'ore-ci',
+    channel: 'tamariba',
+    icon_url: 'http://example.com/icon.png',
+    stdout_log_url: 'http://example.com:31515/stdout_log',
+    stderr_log_url: 'http://example.com:31515/stderr_log',
+  },
+  logger: {
+    webserver: {
+      path: 'work/log/ci.log',
+      shift_age: 'daily'
+    },
+    build: {
+      stdout: {
+        path: 'work/log/stdout.log'
+      },
+      stderr: {
+        path: 'work/log/stderr.log'
+      }
+    }
+  }
+}

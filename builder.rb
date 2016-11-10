@@ -45,8 +45,10 @@ class Builder
 
     Command.execute(command, @base_path, options)
     notify_slack(true)
+    true
   rescue CommandExecuteException
     notify_slack(false)
+    false
   end
 
   def log_open(options, type)
@@ -63,6 +65,7 @@ class Builder
 
   def notify_slack(build_success) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     slack_config = CIConfig[:slack]
+    return if slack_config.nil?
 
     commit_id = Github.commit_id(@base_path)
     url_base = https_url

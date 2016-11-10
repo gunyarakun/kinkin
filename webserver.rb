@@ -6,6 +6,7 @@ require 'fileutils'
 require 'logger'
 require './builder'
 
+$queue = Queue.new
 $thread = nil
 
 def logger_factory
@@ -19,9 +20,12 @@ def logger_factory
   end
 end
 
+def enqueue_build
+  $queue << true
+  settings.logger.info("Queue pushed: #{$queue.length}")
+end
+
 class WebServer < Sinatra::Base
-  # Synchronize on a mutex lock
-  set :lock, true
   set :logger, logger_factory
 
   configure do
@@ -30,6 +34,32 @@ class WebServer < Sinatra::Base
       bc = CIConfig[:builder]
       Builder.new(bc[:server], bc[:user], bc[:project], bc[:branch], bc[:project])
     end
+
+    $thread = Thread.new do
+      timeout_seconds = CIConfig.dig(:webserver, :build_timeout_seconds) || 3600
+
+      builder = settings.builder
+      logger = settings.logger
+
+      loop do
+        $queue.pop
+        logger.info("Queue poped: #{$queue.length}")
+        begin
+          Timeout.timeout(timeout_seconds) do
+            # fetch
+            builder.delete_and_fetch
+            # and build!!!!!
+            if builder.build('~/.rbenv/versions/2.3.1/bin/gem install bundler && ~/.rbenv/versions/2.3.1/bin/rake')
+              logger.info('build successful')
+            else
+              logger.info('build error')
+            end
+          end
+        rescue Timeout::Error
+          logger.error('build timeout')
+        end
+      end
+    end
   end
 
   post '/github_webhook' do
@@ -37,15 +67,7 @@ class WebServer < Sinatra::Base
       request.body.rewind
       payload = JSON.parse(request.body.read)
 
-      # NOTE: "set :lock, true" is required.
-      Thread.kill($thread) unless $thread.nil?
-
-      $thread = Thread.new do
-        # fetch
-        settings.builder.delete_and_fetch
-        # and build!!!!!
-        settings.builder.build('~/.rbenv/versions/2.3.1/bin/gem install bundler && ~/.rbenv/versions/2.3.1/bin/rake')
-      end
+      enqueue_build
 
       settings.logger.info("Webhook: #{JSON.generate(payload)}")
 

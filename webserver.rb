@@ -93,4 +93,12 @@ class WebServer < Sinatra::Base
     mime_type :text_plain
     send_file(log_path)
   end
+
+  get '/rebuild' do
+    settings.logger.info('rebuild!!')
+
+    enqueue_build
+
+    'rebuild!'
+  end
 end

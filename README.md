@@ -21,7 +21,7 @@ cp ci_config.rb.template ci_config.rb
 ## Launch
 
 ```ruby
-rackup -s puma -E production -p 31919 -o 0.0.0.0
+puma -e production -p 31919 -C puma.rb
 ```
 
 ## Set Webhook on Github
